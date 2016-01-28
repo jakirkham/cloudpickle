@@ -44,6 +44,7 @@ from __future__ import print_function
 
 import operator
 import io
+import imp
 import pickle
 import struct
 import sys
@@ -134,8 +135,17 @@ class CloudPickler(Pickler):
         """
         Save a module as an import
         """
+        try:
+            imp.find_module(obj.__name__)
+            is_dynamic = False
+        except ImportError:
+            is_dynamic = True
+
         self.modules.add(obj)
-        self.save_reduce(subimport, (obj.__name__,), obj=obj)
+        if is_dynamic:
+            self.save_reduce(dynamic_subimport, (obj.__name__, vars(obj)))
+        else:
+            self.save_reduce(subimport, (obj.__name__,), obj=obj)
     dispatch[types.ModuleType] = save_module
 
     def save_codeobject(self, obj):
@@ -313,7 +323,7 @@ class CloudPickler(Pickler):
         return (code, f_globals, defaults, closure, dct, base_globals)
 
     def save_builtin_function(self, obj):
-        if obj.__module__ is "__builtin__":
+        if obj.__module__ == "__builtin__":
             return self.save_global(obj)
         return self.save_function(obj)
     dispatch[types.BuiltinFunctionType] = save_builtin_function
@@ -619,6 +629,12 @@ def subimport(name):
     __import__(name)
     return sys.modules[name]
 
+
+def dynamic_subimport(name, vars):
+    mod = imp.new_module(name)
+    mod.__dict__.update(vars)
+    sys.modules[name] = mod
+    return mod
 
 # restores function attributes
 def _restore_attr(obj, attr):
