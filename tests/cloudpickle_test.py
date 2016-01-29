@@ -1,10 +1,12 @@
 from __future__ import division
+import imp
 import unittest
 import pytest
 import pickle
 import sys
 import functools
 import platform
+import textwrap
 
 try:
     # try importing numpy and scipy. These are not hard dependencies and
@@ -252,6 +254,28 @@ class CloudPickleTest(unittest.TestCase):
             self.assertEqual(g.im_class.__name__, F.f.im_class.__name__)
         # self.assertEqual(g(F(), 1), 2)  # still fails
 
+    def test_module(self):
+        self.assertEqual(pickle, pickle_depickle(pickle))
+
+    def test_dynamic_module(self):
+        if True: return
+
+        mod = imp.new_module('mod')
+        code = '''
+        x = 1
+        def f(y):
+            return x + y
+        '''
+        exec(textwrap.dedent(code), mod.__dict__)
+        mod2 = pickle_depickle(mod)
+        self.assertEqual(mod.x, mod2.x)
+        self.assertEqual(mod.f(5), mod2.f(5))
+
+    def test_Ellipsis(self):
+        self.assertEqual(Ellipsis, pickle_depickle(Ellipsis))
+
+    def test_NotImplemented(self):
+        self.assertEqual(NotImplemented, pickle_depickle(NotImplemented))
 
 if __name__ == '__main__':
     unittest.main()

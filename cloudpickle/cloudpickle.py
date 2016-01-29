@@ -594,10 +594,19 @@ class CloudPickler(Pickler):
         self.save(retval)
         self.memoize(obj)
 
+    def save_ellipsis(self, obj):
+        self.save_reduce(_gen_ellipsis, ())
+
+    def save_not_implemented(self, obj):
+        self.save_reduce(_gen_not_implemented, ())
+
     if PY3:
         dispatch[io.TextIOWrapper] = save_file
     else:
         dispatch[file] = save_file
+
+    dispatch[type(Ellipsis)] = save_ellipsis
+    dispatch[type(NotImplemented)] = save_not_implemented
 
     """Special functions for Add-on libraries"""
     def inject_addons(self):
@@ -679,6 +688,11 @@ def _genpartial(func, args, kwds):
         kwds = {}
     return partial(func, *args, **kwds)
 
+def _gen_ellipsis():
+    return Ellipsis
+
+def _gen_not_implemented():
+    return NotImplemented
 
 def _fill_function(func, globals, defaults, dict):
     """ Fills in the rest of function data into the skeleton function object
