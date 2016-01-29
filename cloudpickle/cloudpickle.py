@@ -135,8 +135,16 @@ class CloudPickler(Pickler):
         """
         Save a module as an import
         """
+        mod_name = obj.__name__
+        path = None
+
+        # Use find_module with each piece to follow subimports
+        # If module is successfully found then it is not a dynamically created module
         try:
-            imp.find_module(obj.__name__)
+            for part in mod_name.split('.'):
+                if path is not None:
+                    path = [path]
+                _, path, _ = imp.find_module(part, path)
             is_dynamic = False
         except ImportError:
             is_dynamic = True
