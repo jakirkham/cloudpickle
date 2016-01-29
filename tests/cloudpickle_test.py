@@ -258,8 +258,6 @@ class CloudPickleTest(unittest.TestCase):
         self.assertEqual(pickle, pickle_depickle(pickle))
 
     def test_dynamic_module(self):
-        if True: return
-
         mod = imp.new_module('mod')
         code = '''
         x = 1
